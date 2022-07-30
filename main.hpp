@@ -14,6 +14,9 @@ using namespace std;
 #define GREY_SAVE_PATH "/home/quinton/Desktop/ER_StructureExtraction/grey_dst.png"     // 灰度图保存路径
 #define ERODE_SAVE_PATH "/home/quinton/Desktop/ER_StructureExtraction/erode_dst.png"   // 灰度图保存路径
 #define DILATE_SAVE_PATH "/home/quinton/Desktop/ER_StructureExtraction/dilate_dst.png" // 灰度图保存路径
+// ================== 记得更改为自己的路径 ================== //
+
+#define IS_CLOSED  1 // 是否闭运算
 
 class Macrocontrol
 {
