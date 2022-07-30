@@ -1,0 +1,6 @@
+make --dry-run --keep-going --print-directory
+make: Entering directory '/home/quinton/Desktop/ER_StructureExtraction'
+make: Leaving directory '/home/quinton/Desktop/ER_StructureExtraction'
+ 
+make: *** No targets specified and no makefile found.  Stop.
+
