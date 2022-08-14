@@ -17,8 +17,8 @@ float g_nStructElementSize3 = 6;
 float g_nStructElementSize4 = 3;
 float g_nStructElementSize5 = 6;
 
-int g_nStructElementSize = 10;
-int thresholds = 150;
+int g_nStructElementSize = 14;
+int thresholds = 70;
 
 cv::Mat element1 = getStructuringElement(MORPH_ELLIPSE,
                                          Size(g_nStructElementSize1,
@@ -52,9 +52,8 @@ void morphologyEx_track(int typeValue, void *)
 
 int main()
 {
+  // ================== 灰度化与提亮 ================== //
   cvtColor(src, grey_dst, COLOR_BGR2GRAY); // 灰度化
-
-  // 灰度图调整对比度和亮度
   if (grey_dst.channels() == 1)
   {
     for (int row = 0; row < grey_dst.rows; row++)
@@ -71,19 +70,29 @@ int main()
     // imshow("grey_dst", grey_dst);
     // imwrite(GREY_SAVE_PATH, grey_dst);
   }
+// ================== 灰度化与提亮 ================== //
 
+// ================== thresholds二值化处理 ================== //
+#if IS_DEBUG
   namedWindow("threshold_dst", WINDOW_AUTOSIZE);
   cv::createTrackbar("threshold阈值:", "threshold_dst", &thresholds, 255, threshold_track); // 创建threshold阈值滑动条 70
   threshold_track(0, 0);
   waitKey(0);
+#else
+  cv::threshold(grey_dst, threshold_dst, thresholds, 255, THRESH_TOZERO);
+#endif
+// ================== thresholds二值化处理 ================== //
 
+// ================== 闭运算 ================== //
 #if IS_CLOSED
-  // 闭运算
-  // morphologyEx(threshold_dst, morphologyEx_dst, MORPH_CLOSE, element1);
-  // imshow("morphologyEx_dst", morphologyEx_dst);
+#if IS_DEBUG
   namedWindow("morphologyEx_dst", WINDOW_AUTOSIZE);
-  cv::createTrackbar("morphologyEx阈值:","morphologyEx_dst", &g_nStructElementSize,50,morphologyEx_track); // 创建morphologyEx滑动条 14
+  cv::createTrackbar("morphologyEx阈值:", "morphologyEx_dst", &g_nStructElementSize, 50, morphologyEx_track); // 创建morphologyEx滑动条 14
   morphologyEx_track(0, 0);
+#else
+  morphologyEx(threshold_dst, morphologyEx_dst, MORPH_CLOSE, getStructuringElement(MORPH_ELLIPSE, Size(g_nStructElementSize, g_nStructElementSize)));
+  imshow("morphologyEx_dst", morphologyEx_dst);
+#endif
 
 #else
   // 腐蚀_1
@@ -109,8 +118,40 @@ int main()
   imshow("dilate_dst2", dilate_dst2);
 
   // imwrite(ERODE_SAVE_PATH, erode_dst2);
-
 #endif
+  // ================== 闭运算 ================== //
+
+  // ================== 寻找轮廓 ================== //
+  vector<vector<Point>> contours;
+  vector<Vec4i> hierarchy;
+  findContours(morphologyEx_dst, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point());
+  Mat imageContours = Mat::zeros(morphologyEx_dst.size(), CV_8UC1);
+  Mat Contours = Mat::zeros(morphologyEx_dst.size(), CV_8UC1); //绘制
+  for (int i = 0; i < contours.size(); i++)
+  {
+    // contours[i]代表的是第i个轮廓，contours[i].size()代表的是第i个轮廓上所有的像素点数
+    for (int j = 0; j < contours[i].size(); j++)
+    {
+      //绘制出contours向量内所有的像素点
+      Point P = Point(contours[i][j].x, contours[i][j].y);
+      Contours.at<uchar>(P) = 255;
+    }
+
+    //输出hierarchy向量内容
+    char ch[256];
+    sprintf(ch, "%d", i);
+    string str = ch;
+    cout << "向量hierarchy的第" << str << " 个元素内容为：" << endl
+         << hierarchy[i] << endl
+         << endl;
+
+    //绘制轮廓
+    drawContours(imageContours, contours, i, Scalar(255), 1, 8, hierarchy);
+  }
+  imshow("Contours Image", imageContours); //轮廓
+  imshow("Point of Contours", Contours);   //向量contours内保存的所有轮廓点集
+  waitKey(0);
+  // ================== 寻找轮廓 ================== //
 
   namedWindow("Test window", WINDOW_AUTOSIZE);
   imshow("Test window", grey_dst);

@@ -16,7 +16,9 @@ using namespace std;
 #define DILATE_SAVE_PATH "/home/quinton/Desktop/ER_StructureExtraction/dilate_dst.png" // 灰度图保存路径
 // ================== 记得更改为自己的路径 ================== //
 
-#define IS_CLOSED  1 // 是否闭运算
+#define IS_CLOSED 1 // 是否闭运算
+// #define IS_DEBUG 1  // 是否进入调试
+
 
 class Macrocontrol
 {
