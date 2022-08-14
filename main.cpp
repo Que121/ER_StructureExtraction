@@ -137,6 +137,7 @@ int main()
       Contours.at<uchar>(P) = 255;
     }
 
+#if IS_DEBUG
     //输出hierarchy向量内容
     char ch[256];
     sprintf(ch, "%d", i);
@@ -144,6 +145,7 @@ int main()
     cout << "向量hierarchy的第" << str << " 个元素内容为：" << endl
          << hierarchy[i] << endl
          << endl;
+#endif
 
     //绘制轮廓
     drawContours(imageContours, contours, i, Scalar(255), 1, 8, hierarchy);
@@ -152,6 +154,19 @@ int main()
   imshow("Point of Contours", Contours);   //向量contours内保存的所有轮廓点集
   waitKey(0);
   // ================== 寻找轮廓 ================== //
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
   namedWindow("Test window", WINDOW_AUTOSIZE);
   imshow("Test window", grey_dst);
