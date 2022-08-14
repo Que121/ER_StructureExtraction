@@ -10,14 +10,17 @@ using namespace std;
 
 // ================== 记得更改为自己的路径 ================== //
 #define TEST_PATH "/home/quinton/Desktop/ER_StructureExtraction/test4.jpg"             // 测试路径
-#define SAVE_PATH "/home/quinton/Desktop/ER_StructureExtraction/test_processed.png"    // 保存路径
+#define SAVE_PATH "/home/quinton/Desktop/ER_StructureExtraction/test_processed2.png"    // 保存路径
 #define GREY_SAVE_PATH "/home/quinton/Desktop/ER_StructureExtraction/grey_dst.png"     // 灰度图保存路径
 #define ERODE_SAVE_PATH "/home/quinton/Desktop/ER_StructureExtraction/erode_dst.png"   // 灰度图保存路径
 #define DILATE_SAVE_PATH "/home/quinton/Desktop/ER_StructureExtraction/dilate_dst.png" // 灰度图保存路径
 // ================== 记得更改为自己的路径 ================== //
 
 #define IS_CLOSED 1 // 是否闭运算
-// #define IS_DEBUG 1  // 是否进入调试
+#define IS_DEBUG 1  // 是否进入调试
+// #define IS_DEBUG_THRESHOLD 1 // 调试threshold
+// #define IS_DEBUG_MORPHOLOGYEX 1 // 调试morphologyex
+// #define IS_DEBUG_HIERARCHY 1 //
 
 class Macrocontrol
 {

@@ -50,6 +50,22 @@ void morphologyEx_track(int typeValue, void *)
   imshow("morphologyEx_dst", morphologyEx_dst);
 }
 
+// 反色
+void invertColor(cv::Mat &image)
+{
+  if (image.channels() == 1)
+  {
+    for (int row = 0; row < image.rows; row++)
+    {
+      for (int col = 0; col < image.cols; col++)
+      {
+        float v = image.at<uchar>(row, col);
+        image.at<uchar>(row, col) = 255 - image.at<uchar>(row, col); // 反色
+      }
+    }
+  }
+}
+
 int main()
 {
   // ================== 灰度化与提亮 ================== //
@@ -63,7 +79,6 @@ int main()
         float v = grey_dst.at<uchar>(row, col);
         grey_dst.at<uchar>(row, col) = saturate_cast<uchar>(v * alpha + beta);
         grey_dst.at<uchar>(row, col) = saturate_cast<uchar>(v * alpha);
-        // grey_dst.at<uchar>(row, col) = 255 - grey_dst.at<uchar>(row, col); // 反色
       }
     }
     // namedWindow("grey_dst", WINDOW_AUTOSIZE);
@@ -73,7 +88,7 @@ int main()
 // ================== 灰度化与提亮 ================== //
 
 // ================== thresholds二值化处理 ================== //
-#if IS_DEBUG
+#if IS_DEBUG_THRESHOLD
   namedWindow("threshold_dst", WINDOW_AUTOSIZE);
   cv::createTrackbar("threshold阈值:", "threshold_dst", &thresholds, 255, threshold_track); // 创建threshold阈值滑动条 70
   threshold_track(0, 0);
@@ -85,7 +100,7 @@ int main()
 
 // ================== 闭运算 ================== //
 #if IS_CLOSED
-#if IS_DEBUG
+#if IS_DEBUG_MORPHOLOGYEX
   namedWindow("morphologyEx_dst", WINDOW_AUTOSIZE);
   cv::createTrackbar("morphologyEx阈值:", "morphologyEx_dst", &g_nStructElementSize, 50, morphologyEx_track); // 创建morphologyEx滑动条 14
   morphologyEx_track(0, 0);
@@ -137,7 +152,7 @@ int main()
       Contours.at<uchar>(P) = 255;
     }
 
-#if IS_DEBUG
+#if IS_DEBUG_HIERARCHY
     //输出hierarchy向量内容
     char ch[256];
     sprintf(ch, "%d", i);
@@ -150,23 +165,15 @@ int main()
     //绘制轮廓
     drawContours(imageContours, contours, i, Scalar(255), 1, 8, hierarchy);
   }
+  invertColor(imageContours);
   imshow("Contours Image", imageContours); //轮廓
   imshow("Point of Contours", Contours);   //向量contours内保存的所有轮廓点集
   waitKey(0);
   // ================== 寻找轮廓 ================== //
 
+  // ================== 筛选主轮廓 ================= //
 
-
-
-
-
-
-
-
-
-
-
-  
+  // ================== 筛选主轮廓 ================= //
 
   namedWindow("Test window", WINDOW_AUTOSIZE);
   imshow("Test window", grey_dst);
