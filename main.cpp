@@ -17,11 +17,19 @@ float g_nStructElementSize3 = 6;
 float g_nStructElementSize4 = 3;
 float g_nStructElementSize5 = 6;
 
-int g_nStructElementSize = 14;
+int g_nStructElementSize = 17;
+int g_nStructElementSize_Debug = 0;
 int thresholds = 70;
+int thresholds_Debug = 0;
+int selectContoursMin = 100;
+int selectContoursMin_Debug = 0;
+
+vector<vector<Point>> contours;
+vector<Vec4i> hierarchy;
 
 cv::Mat element1 = getStructuringElement(MORPH_ELLIPSE,
                                          Size(g_nStructElementSize1,
+
                                               g_nStructElementSize1)); // 膨胀腐蚀内核
 cv::Mat element2 = getStructuringElement(MORPH_RECT,
                                          Size(g_nStructElementSize2,
@@ -36,7 +44,7 @@ cv::Mat element4 = getStructuringElement(MORPH_RECT,
 // threshold阈值滑动条回调函数
 void threshold_track(int typeValue, void *)
 {
-  cv::threshold(grey_dst, threshold_dst, thresholds, 255, THRESH_TOZERO);
+  cv::threshold(grey_dst, threshold_dst, thresholds_Debug, 255, THRESH_TOZERO);
   imshow("threshold_dst", threshold_dst);
 }
 
@@ -44,10 +52,33 @@ void threshold_track(int typeValue, void *)
 void morphologyEx_track(int typeValue, void *)
 {
   cv::Mat element = getStructuringElement(MORPH_ELLIPSE,
-                                          Size(g_nStructElementSize,
-                                               g_nStructElementSize));
+                                          Size(g_nStructElementSize_Debug,
+                                               g_nStructElementSize_Debug));
   morphologyEx(threshold_dst, morphologyEx_dst, MORPH_CLOSE, element);
   imshow("morphologyEx_dst", morphologyEx_dst);
+}
+
+// contours面积筛选回调函数
+void selectContours_track(int typeValue, void *)
+{
+  vector<vector<Point>>::iterator iter = contours.begin();
+  for (; iter != contours.end();)
+  {
+    double g_dConArea = contourArea(*iter);
+    if (g_dConArea < selectContoursMin_Debug)
+    {
+      iter = contours.erase(iter);
+    }
+    else
+    {
+      ++iter;
+    }
+  }
+  cout << "【筛选后总共轮廓个数为：" << (int)contours.size() << endl;
+  Mat result(src.size(), CV_8U, Scalar(0));
+  drawContours(result, contours, -1, Scalar(255), -1); // -1 表示所有轮廓
+  namedWindow("selectContours_dst");
+  imshow("selectContours_dst", result);
 }
 
 // 反色
@@ -90,9 +121,8 @@ int main()
 // ================== thresholds二值化处理 ================== //
 #if IS_DEBUG_THRESHOLD
   namedWindow("threshold_dst", WINDOW_AUTOSIZE);
-  cv::createTrackbar("threshold阈值:", "threshold_dst", &thresholds, 255, threshold_track); // 创建threshold阈值滑动条 70
+  cv::createTrackbar("threshold阈值:", "threshold_dst", &thresholds_Debug, 255, threshold_track); // 创建threshold阈值滑动条 70
   threshold_track(0, 0);
-  waitKey(0);
 #else
   cv::threshold(grey_dst, threshold_dst, thresholds, 255, THRESH_TOZERO);
 #endif
@@ -137,8 +167,6 @@ int main()
   // ================== 闭运算 ================== //
 
   // ================== 寻找轮廓 ================== //
-  vector<vector<Point>> contours;
-  vector<Vec4i> hierarchy;
   findContours(morphologyEx_dst, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point());
   Mat imageContours = Mat::zeros(morphologyEx_dst.size(), CV_8UC1);
   Mat Contours = Mat::zeros(morphologyEx_dst.size(), CV_8UC1); //绘制
@@ -168,16 +196,47 @@ int main()
   invertColor(imageContours);
   imshow("Contours Image", imageContours); //轮廓
   imshow("Point of Contours", Contours);   //向量contours内保存的所有轮廓点集
-  waitKey(0);
+
   // ================== 寻找轮廓 ================== //
 
   // ================== 筛选主轮廓 ================= //
+  cout << "【筛选前总共轮廓个数为】：" << (int)contours.size() << endl;
+  for (int i = 0; i < (int)contours.size(); i++)
+  {
+    double g_dConArea = contourArea(contours[i], true);
+    // cout << "【用轮廓面积计算函数计算出来的第" << i << "个轮廓的面积为：】" << g_dConArea << endl;
+  }
+#if IS_DEBUG_SELECTCONTOURS
+  namedWindow("selectContours_dst", WINDOW_AUTOSIZE);
+  cv::createTrackbar("selectContours最大值:", "selectContours_dst", &selectContoursMin_Debug, 1000, selectContours_track);
+  selectContours_track(0, 0);
+#else
+  //筛选剔除掉面积小于100的轮廓
+  vector<vector<Point>>::iterator iter = contours.begin();
+  for (; iter != contours.end();)
+  {
+    double g_dConArea = contourArea(*iter);
+    if (g_dConArea < selectContoursMin)
+    {
+      iter = contours.erase(iter);
+    }
+    else
+    {
+      ++iter;
+    }
+  }
+  cout << "【筛选后总共轮廓个数为：" << (int)contours.size() << endl;
+  Mat result(src.size(), CV_8U, Scalar(0));
+  drawContours(result, contours, -1, Scalar(255), -1); // -1 表示所有轮廓
+  namedWindow("result");
+  imshow("result", result);
+#endif
 
   // ================== 筛选主轮廓 ================= //
 
-  namedWindow("Test window", WINDOW_AUTOSIZE);
-  imshow("Test window", grey_dst);
-  // imwrite(SAVE_PATH, grey_dst);
+  // namedWindow("Test window", WINDOW_AUTOSIZE);
+  // imshow("Test window", grey_dst);
+  // imwrite(SAVE_PATH_RESULT, result);
   waitKey(0);
 
   return 0;
