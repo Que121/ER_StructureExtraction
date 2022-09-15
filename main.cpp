@@ -1,13 +1,8 @@
 #include "main.hpp"
 
 cv::Mat src = imread(TEST_PATH, IMREAD_COLOR);
-cv::Mat grey_dst = Mat ::zeros(src.size(), src.type());
-cv::Mat morphologyEx_dst = Mat ::zeros(src.size(), src.type());
-cv::Mat threshold_dst = Mat ::zeros(src.size(), src.type());
-cv::Mat erode_dst1 = Mat ::zeros(src.size(), src.type());
-cv::Mat erode_dst2 = Mat ::zeros(src.size(), src.type());
-cv::Mat dilate_dst1 = Mat ::zeros(src.size(), src.type());
-cv::Mat dilate_dst2 = Mat ::zeros(src.size(), src.type());
+cv::Mat dst = Mat ::zeros(src.size(), src.type());
+cv::Mat temp_dst = Mat ::zeros(src.size(), src.type());
 
 float alpha = 2.5;                // 对比度
 float beta = 170;                 // 亮度
@@ -17,7 +12,7 @@ float g_nStructElementSize3 = 6;
 float g_nStructElementSize4 = 3;
 float g_nStructElementSize5 = 6;
 
-int g_nStructElementSize = 17;
+int g_nStructElementSize = 14;
 int g_nStructElementSize_Debug = 0;
 int thresholds = 70;
 int thresholds_Debug = 0;
@@ -27,25 +22,60 @@ int selectContoursMin_Debug = 0;
 vector<vector<Point>> contours;
 vector<Vec4i> hierarchy;
 
-cv::Mat element1 = getStructuringElement(MORPH_ELLIPSE,
-                                         Size(g_nStructElementSize1,
+// 反色
+void invertColor(cv::Mat &dst)
+{
+  if (dst.channels() == 1)
+  {
+    for (int row = 0; row < dst.rows; row++)
+    {
+      for (int col = 0; col < dst.cols; col++)
+      {
+        float v = dst.at<uchar>(row, col);
+        dst.at<uchar>(row, col) = 255 - dst.at<uchar>(row, col); // 反色
+      }
+    }
+  }
+}
 
-                                              g_nStructElementSize1)); // 膨胀腐蚀内核
-cv::Mat element2 = getStructuringElement(MORPH_RECT,
-                                         Size(g_nStructElementSize2,
-                                              g_nStructElementSize2));
-cv::Mat element3 = getStructuringElement(MORPH_ELLIPSE,
-                                         Size(g_nStructElementSize3,
-                                              g_nStructElementSize3));
-cv::Mat element4 = getStructuringElement(MORPH_RECT,
-                                         Size(g_nStructElementSize4,
-                                              g_nStructElementSize4));
+// 灰度化与提亮
+void greyAndBrightness(cv::Mat &src, cv::Mat &dst)
+{
+  cvtColor(src, dst, COLOR_BGR2GRAY); // 灰度化
+  if (dst.channels() == 1)
+  {
+    for (int row = 0; row < dst.rows; row++)
+    {
+      for (int col = 0; col < dst.cols; col++)
+      {
+        float v = dst.at<uchar>(row, col);
+        dst.at<uchar>(row, col) = saturate_cast<uchar>(v * alpha + beta);
+        dst.at<uchar>(row, col) = saturate_cast<uchar>(v * alpha);
+      }
+    }
+    // namedWindow("grey_dst", WINDOW_AUTOSIZE);
+    // imshow("grey_dst", grey_dst);
+    // imwrite(GREY_SAVE_PATH, grey_dst);
+  }
+}
 
 // threshold阈值滑动条回调函数
 void threshold_track(int typeValue, void *)
 {
-  cv::threshold(grey_dst, threshold_dst, thresholds_Debug, 255, THRESH_TOZERO);
-  imshow("threshold_dst", threshold_dst);
+  cv::threshold(dst, temp_dst, thresholds_Debug, 255, THRESH_TOZERO);
+  cv::imshow("threshold_dst", temp_dst);
+}
+
+// thresholds二值化处理
+void thresholdsProcessing(cv::Mat &dst)
+{
+#if IS_DEBUG_THRESHOLD
+  namedWindow("threshold_dst", WINDOW_AUTOSIZE);
+  cv::createTrackbar("threshold阈值:", "threshold_dst", &thresholds_Debug, 255, threshold_track); // 创建threshold阈值滑动条 70
+  threshold_track(0, 0);
+#else
+  cv::threshold(dst, dst, thresholds, 70, THRESH_TOZERO); // 70
+#endif
 }
 
 // morphologyEx滑动条回调函数
@@ -54,122 +84,29 @@ void morphologyEx_track(int typeValue, void *)
   cv::Mat element = getStructuringElement(MORPH_ELLIPSE,
                                           Size(g_nStructElementSize_Debug,
                                                g_nStructElementSize_Debug));
-  morphologyEx(threshold_dst, morphologyEx_dst, MORPH_CLOSE, element);
-  imshow("morphologyEx_dst", morphologyEx_dst);
+  morphologyEx(dst, temp_dst, MORPH_CLOSE, element);
+  imshow("morphologyEx_dst", temp_dst);
 }
 
-// contours面积筛选回调函数
-void selectContours_track(int typeValue, void *)
+// 闭运算
+void closedoPerations(cv::Mat &dst)
 {
-  vector<vector<Point>>::iterator iter = contours.begin();
-  for (; iter != contours.end();)
-  {
-    double g_dConArea = contourArea(*iter);
-    if (g_dConArea < selectContoursMin_Debug)
-    {
-      iter = contours.erase(iter);
-    }
-    else
-    {
-      ++iter;
-    }
-  }
-  cout << "【筛选后总共轮廓个数为：" << (int)contours.size() << endl;
-  Mat result(src.size(), CV_8U, Scalar(0));
-  drawContours(result, contours, -1, Scalar(255), -1); // -1 表示所有轮廓
-  namedWindow("selectContours_dst");
-  imshow("selectContours_dst", result);
-}
-
-// 反色
-void invertColor(cv::Mat &image)
-{
-  if (image.channels() == 1)
-  {
-    for (int row = 0; row < image.rows; row++)
-    {
-      for (int col = 0; col < image.cols; col++)
-      {
-        float v = image.at<uchar>(row, col);
-        image.at<uchar>(row, col) = 255 - image.at<uchar>(row, col); // 反色
-      }
-    }
-  }
-}
-
-int main()
-{
-  // ================== 灰度化与提亮 ================== //
-  cvtColor(src, grey_dst, COLOR_BGR2GRAY); // 灰度化
-  if (grey_dst.channels() == 1)
-  {
-    for (int row = 0; row < grey_dst.rows; row++)
-    {
-      for (int col = 0; col < grey_dst.cols; col++)
-      {
-        float v = grey_dst.at<uchar>(row, col);
-        grey_dst.at<uchar>(row, col) = saturate_cast<uchar>(v * alpha + beta);
-        grey_dst.at<uchar>(row, col) = saturate_cast<uchar>(v * alpha);
-      }
-    }
-    // namedWindow("grey_dst", WINDOW_AUTOSIZE);
-    // imshow("grey_dst", grey_dst);
-    // imwrite(GREY_SAVE_PATH, grey_dst);
-  }
-// ================== 灰度化与提亮 ================== //
-
-// ================== thresholds二值化处理 ================== //
-#if IS_DEBUG_THRESHOLD
-  namedWindow("threshold_dst", WINDOW_AUTOSIZE);
-  cv::createTrackbar("threshold阈值:", "threshold_dst", &thresholds_Debug, 255, threshold_track); // 创建threshold阈值滑动条 70
-  threshold_track(0, 0);
-#else
-  cv::threshold(grey_dst, threshold_dst, thresholds, 255, THRESH_TOZERO);
-#endif
-// ================== thresholds二值化处理 ================== //
-
-// ================== 闭运算 ================== //
-#if IS_CLOSED
 #if IS_DEBUG_MORPHOLOGYEX
   namedWindow("morphologyEx_dst", WINDOW_AUTOSIZE);
   cv::createTrackbar("morphologyEx阈值:", "morphologyEx_dst", &g_nStructElementSize, 50, morphologyEx_track); // 创建morphologyEx滑动条 14
   morphologyEx_track(0, 0);
 #else
-  morphologyEx(threshold_dst, morphologyEx_dst, MORPH_CLOSE, getStructuringElement(MORPH_ELLIPSE, Size(g_nStructElementSize, g_nStructElementSize)));
-  imshow("morphologyEx_dst", morphologyEx_dst);
+  morphologyEx(dst, dst, MORPH_CLOSE, getStructuringElement(MORPH_ELLIPSE, Size(g_nStructElementSize, g_nStructElementSize)));
+  // cv::imshow("morphologyEx_dst", dst);
 #endif
+}
 
-#else
-  // 腐蚀_1
-  cv::erode(grey_dst, erode_dst1, element1);
-  namedWindow("erode_dst1", WINDOW_AUTOSIZE);
-  imshow("erode_dst1", erode_dst1);
-  imwrite(ERODE_SAVE_PATH, erode_dst1);
-
-  // 膨胀_1
-  cv::dilate(erode_dst1, dilate_dst1, element2);
-  namedWindow("dilate_dst", WINDOW_AUTOSIZE);
-  imshow("dilate_dst", dilate_dst1);
-  imwrite(DILATE_SAVE_PATH, dilate_dst1);
-
-  // 腐蚀_2
-  cv::erode(dilate_dst1, erode_dst2, element3);
-  namedWindow("erode_dst2", WINDOW_AUTOSIZE);
-  imshow("erode_dst2", erode_dst2);
-
-  // 膨胀_2
-  cv::dilate(erode_dst2, dilate_dst2, element4);
-  namedWindow("dilate_dst2", WINDOW_AUTOSIZE);
-  imshow("dilate_dst2", dilate_dst2);
-
-  // imwrite(ERODE_SAVE_PATH, erode_dst2);
-#endif
-  // ================== 闭运算 ================== //
-
-  // ================== 寻找轮廓 ================== //
-  findContours(morphologyEx_dst, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point());
-  Mat imageContours = Mat::zeros(morphologyEx_dst.size(), CV_8UC1);
-  Mat Contours = Mat::zeros(morphologyEx_dst.size(), CV_8UC1); //绘制
+// 绘制轮廓
+void drawContours(cv::Mat &dst)
+{
+  findContours(dst, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point());
+  Mat imageContours = Mat::zeros(dst.size(), CV_8UC1);
+  Mat Contours = Mat::zeros(dst.size(), CV_8UC1); //绘制
   for (int i = 0; i < contours.size(); i++)
   {
     // contours[i]代表的是第i个轮廓，contours[i].size()代表的是第i个轮廓上所有的像素点数
@@ -196,10 +133,34 @@ int main()
   invertColor(imageContours);
   imshow("Contours Image", imageContours); //轮廓
   imshow("Point of Contours", Contours);   //向量contours内保存的所有轮廓点集
+}
 
-  // ================== 寻找轮廓 ================== //
+// contours面积筛选回调函数
+void selectContours_track(int typeValue, void *)
+{
+  vector<vector<Point>>::iterator iter = contours.begin();
+  for (; iter != contours.end();)
+  {
+    double g_dConArea = contourArea(*iter);
+    if (g_dConArea < selectContoursMin_Debug)
+    {
+      iter = contours.erase(iter);
+    }
+    else
+    {
+      ++iter;
+    }
+  }
+  cout << "【筛选后总共轮廓个数为：" << (int)contours.size() << endl;
+  Mat result(dst.size(), CV_8U, Scalar(0));
+  drawContours(result, contours, -1, Scalar(255), -1); // -1 表示所有轮廓
+  namedWindow("selectContours_dst");
+  cv::imshow("selectContours_dst", result);
+}
 
-  // ================== 筛选主轮廓 ================= //
+// 轮廓过滤
+void contoursFilter(cv::Mat &dst)
+{
   cout << "【筛选前总共轮廓个数为】：" << (int)contours.size() << endl;
   for (int i = 0; i < (int)contours.size(); i++)
   {
@@ -226,18 +187,26 @@ int main()
     }
   }
   cout << "【筛选后总共轮廓个数为：" << (int)contours.size() << endl;
-  Mat result(src.size(), CV_8U, Scalar(0));
+  Mat result(dst.size(), CV_8U, Scalar(0));
   drawContours(result, contours, -1, Scalar(255), -1); // -1 表示所有轮廓
   namedWindow("result");
   imshow("result", result);
 #endif
+}
 
-  // ================== 筛选主轮廓 ================= //
+int main()
+{
+  greyAndBrightness(src, dst);
+  thresholdsProcessing(dst);
+  closedoPerations(dst);
+  drawContours(dst);
+  invertColor(dst);
 
   // namedWindow("Test window", WINDOW_AUTOSIZE);
-  // imshow("Test window", grey_dst);
+  imshow("src", src);
+  imshow("dst", dst);
   // imwrite(SAVE_PATH_RESULT, result);
   waitKey(0);
-
+  waitKey(0);
   return 0;
 }

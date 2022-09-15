@@ -6,11 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/home/quinton/Desktop/ER_StructureExtraction/main.cpp
-main.hpp
-/home/quinton/Desktop/ER_StructureExtraction/main.hpp
-
-/home/quinton/Desktop/ER_StructureExtraction/main.hpp
+/home/quinton/Desktop/ER_StructureExtraction/Setting.hpp
 opencv2/core/core.hpp
 -
 opencv2/imgproc/imgproc.hpp
@@ -23,6 +19,20 @@ iostream
 -
 string
 -
+
+/home/quinton/Desktop/ER_StructureExtraction/main.cpp
+main.hpp
+/home/quinton/Desktop/ER_StructureExtraction/main.hpp
+
+/home/quinton/Desktop/ER_StructureExtraction/main.hpp
+Setting.hpp
+/home/quinton/Desktop/ER_StructureExtraction/Setting.hpp
+preprocessing.hpp
+/home/quinton/Desktop/ER_StructureExtraction/preprocessing.hpp
+
+/home/quinton/Desktop/ER_StructureExtraction/preprocessing.hpp
+Setting.hpp
+/home/quinton/Desktop/ER_StructureExtraction/Setting.hpp
 
 /usr/local/include/opencv4/opencv2/core.hpp
 opencv2/core/cvdef.h

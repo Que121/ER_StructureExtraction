@@ -3,5 +3,10 @@
   "directory": "/home/quinton/Desktop/ER_StructureExtraction/build",
   "command": "/usr/bin/clang++   -isystem /usr/local/include/opencv4  -g   -o CMakeFiles/main.dir/main.cpp.o -c /home/quinton/Desktop/ER_StructureExtraction/main.cpp",
   "file": "/home/quinton/Desktop/ER_StructureExtraction/main.cpp"
+},
+{
+  "directory": "/home/quinton/Desktop/ER_StructureExtraction/build",
+  "command": "/usr/bin/clang++   -isystem /usr/local/include/opencv4  -g   -o CMakeFiles/main.dir/preprocessing.cpp.o -c /home/quinton/Desktop/ER_StructureExtraction/preprocessing.cpp",
+  "file": "/home/quinton/Desktop/ER_StructureExtraction/preprocessing.cpp"
 }
 ]
